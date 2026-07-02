@@ -6,6 +6,7 @@ import android.util.Log
 import com.dream.echoreview.domain.repository.IAudioRecorder
 import com.dream.echoreview.domain.repository.RecordingState
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -30,7 +31,11 @@ class AndroidAudioRecorder @Inject constructor() : IAudioRecorder {
     private var startTimeNano = 0L
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private val _audioFlow = MutableSharedFlow<ByteArray>(extraBufferCapacity = 64)
+    private val _audioFlow = MutableSharedFlow<ByteArray>(
+        replay = 0,
+        extraBufferCapacity = 128,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST //  网络卡顿时，丢弃老音频数据，绝对不卡死麦克风采集协程
+    )
     override val audioFlow = _audioFlow.asSharedFlow()
 
     private val _stateFlow = MutableStateFlow(RecordingState.IDLE)

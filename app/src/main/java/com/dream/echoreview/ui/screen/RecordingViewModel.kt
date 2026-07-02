@@ -2,18 +2,22 @@ package com.dream.echoreview.ui.screen
 
 import android.app.Application
 import android.content.Intent
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dream.echoreview.data.audio.RecordingService
 import com.dream.echoreview.domain.model.InterviewSession
+import com.dream.echoreview.domain.model.StreamSegment
 import com.dream.echoreview.domain.repository.IAudioRecorder
 import com.dream.echoreview.domain.repository.IInterviewRepository
 import com.dream.echoreview.domain.repository.ISTTEngine
 import com.dream.echoreview.domain.repository.RecordingState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.*
 import javax.inject.Inject
@@ -46,6 +50,10 @@ class RecordingViewModel @Inject constructor(
     private val _realtimeTranscript = MutableStateFlow("")
     val realtimeTranscript = _realtimeTranscript.asStateFlow()
 
+    // 内部维护的状态容器，实现“句内覆盖、句间追加”
+    private val finishedSentences = mutableListOf<String>()
+    private var currentPartialText = ""
+
     private var currentFile: File? = null
     private var currentId: String = ""
     private var sttJob: Job? = null
@@ -59,15 +67,38 @@ class RecordingViewModel @Inject constructor(
         val file = File(app.filesDir, "recordings/${currentId}.m4a")
         file.parentFile?.mkdirs()
         currentFile = file
-        
-        // 1. 启动实时转写 (恢复为真实的麦克风音频流)
+
+        // 重置状态
+        finishedSentences.clear()
+        currentPartialText = ""
+        _realtimeTranscript.value = ""
+
+        // 1. 启动实时转写 (采用领域模型流)
         sttJob?.cancel()
         sttJob = viewModelScope.launch {
             sttEngine.transcribeStream(audioRecorder.audioFlow)
+                .flowOn(Dispatchers.IO)
                 .onStart { _realtimeTranscript.value = "正在连接 AI 转写..." }
-                .catch { e -> _realtimeTranscript.value = "转写连接失败: ${e.message}" }
-                .collect { text ->
-                    _realtimeTranscript.value = text
+                .catch { e ->
+                    Log.e("RecordingVM", "STT Error: ${e.message}")
+                    _realtimeTranscript.value = "转写连接失败: ${e.message}"
+                }
+                .collect { segment ->
+                    withContext(Dispatchers.Main) {
+                        if (segment.isFinal) {
+                            // 句间追加：将完结的句子存入历史，并清空临时缓存
+                            finishedSentences.add(segment.text)
+                            currentPartialText = ""
+                        } else {
+                            // 句内覆盖：直接替换当前未完结的临时文本
+                            currentPartialText = segment.text
+                        }
+
+                        // 最终暴露给 UI 的拼接结果
+                        val fullTranscript = finishedSentences.joinToString("") + currentPartialText
+                        _realtimeTranscript.value = fullTranscript
+                    }
+
                 }
         }
 
@@ -77,7 +108,7 @@ class RecordingViewModel @Inject constructor(
             putExtra("file_path", file.absolutePath)
         }
         app.startForegroundService(intent)
-        
+
         // 3. 预存 Session
         viewModelScope.launch {
             repository.insertSession(
@@ -100,7 +131,7 @@ class RecordingViewModel @Inject constructor(
             action = RecordingService.ACTION_STOP
         }
         app.startService(intent)
-        
+
         // 保存最终文字
         val finalTranscript = _realtimeTranscript.value
         viewModelScope.launch {
