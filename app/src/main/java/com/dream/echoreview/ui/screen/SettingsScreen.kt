@@ -5,11 +5,36 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+
+/**
+ * 自定义固定长度遮罩转换器
+ * 无论输入多长，隐藏时仅显示固定个数的点
+ */
+class FixedLengthMaskTransformation(private val maskChar: Char = '•', private val length: Int = 12) : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        if (text.isEmpty()) return TransformedText(text, OffsetMapping.Identity)
+        
+        val out = maskChar.toString().repeat(length)
+        
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int = if (offset > 0) length else 0
+            override fun transformedToOriginal(offset: Int): Int = if (offset > 0) text.length else 0
+        }
+        
+        return TransformedText(AnnotatedString(out), offsetMapping)
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,11 +51,24 @@ fun SettingsScreen(
     var deepSeekInput by remember { mutableStateOf("") }
     var geminiInput by remember { mutableStateOf("") }
 
+    var dashScopeVisible by remember { mutableStateOf(false) }
+    var deepSeekVisible by remember { mutableStateOf(false) }
+    var geminiVisible by remember { mutableStateOf(false) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
     LaunchedEffect(dashScopeKey) { dashScopeInput = dashScopeKey ?: "" }
     LaunchedEffect(deepSeekKey) { deepSeekInput = deepSeekKey ?: "" }
     LaunchedEffect(geminiKey) { geminiInput = geminiKey ?: "" }
 
+    LaunchedEffect(Unit) {
+        viewModel.saveResult.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("设置") },
@@ -52,7 +90,7 @@ fun SettingsScreen(
             Text("模型选择 (用于复盘总结)", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             
-            val models = listOf("DeepSeek", "Gemini")
+            val models = listOf("DeepSeek", "Gemini", "DashScope")
             var expanded by remember { mutableStateOf(false) }
             
             ExposedDropdownMenuBox(
@@ -63,7 +101,7 @@ fun SettingsScreen(
                     value = selectedModel,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("当前模型") },
+                    label = { Text("当前选中的模型") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
@@ -88,53 +126,86 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text("API Key 配置", style = MaterialTheme.typography.titleMedium)
+            Text("所有 Key 将加密存储在本地，不会上传至第三方服务器", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+            
             Spacer(modifier = Modifier.height(16.dp))
 
-            // DashScope
-            OutlinedTextField(
+            ApiKeyField(
+                label = "DashScope API Key (阿里百炼)",
                 value = dashScopeInput,
                 onValueChange = { dashScopeInput = it },
-                label = { Text("DashScope API Key (用于语音转文字)") },
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    TextButton(onClick = { viewModel.updateDashScopeApiKey(dashScopeInput) }) {
-                        Text("保存")
-                    }
-                }
+                isVisible = dashScopeVisible,
+                onVisibilityChange = { dashScopeVisible = it },
+                onSave = { viewModel.updateDashScopeApiKey(dashScopeInput) },
+                helperText = "用于 Paraformer 语音转文字"
             )
-            Text("用于阿里 Paraformer 语音识别", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 4.dp, top = 4.dp))
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // DeepSeek
-            OutlinedTextField(
+            ApiKeyField(
+                label = "DeepSeek API Key",
                 value = deepSeekInput,
                 onValueChange = { deepSeekInput = it },
-                label = { Text("DeepSeek API Key") },
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    TextButton(onClick = { viewModel.updateDeepSeekKey(deepSeekInput) }) {
-                        Text("保存")
-                    }
-                }
+                isVisible = deepSeekVisible,
+                onVisibilityChange = { deepSeekVisible = it },
+                onSave = { viewModel.updateDeepSeekKey(deepSeekInput) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Gemini
-            OutlinedTextField(
+            ApiKeyField(
+                label = "Gemini API Key",
                 value = geminiInput,
                 onValueChange = { geminiInput = it },
-                label = { Text("Gemini API Key") },
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    TextButton(onClick = { viewModel.updateGeminiKey(geminiInput) }) {
+                isVisible = geminiVisible,
+                onVisibilityChange = { geminiVisible = it },
+                onSave = { viewModel.updateGeminiKey(geminiInput) }
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+        }
+    }
+}
+
+@Composable
+fun ApiKeyField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isVisible: Boolean,
+    onVisibilityChange: (Boolean) -> Unit,
+    onSave: () -> Unit,
+    helperText: String? = null
+) {
+    Column {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            modifier = Modifier.fillMaxWidth(),
+            // 使用自定义的固定长度转换器
+            visualTransformation = if (isVisible) VisualTransformation.None else FixedLengthMaskTransformation(),
+            trailingIcon = {
+                Row {
+                    IconButton(onClick = { onVisibilityChange(!isVisible) }) {
+                        Icon(
+                            imageVector = if (isVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (isVisible) "隐藏" else "显示"
+                        )
+                    }
+                    TextButton(onClick = onSave, enabled = value.isNotBlank()) {
                         Text("保存")
                     }
                 }
+            }
+        )
+        if (helperText != null) {
+            Text(
+                text = helperText,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 4.dp, top = 4.dp),
+                color = MaterialTheme.colorScheme.outline
             )
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
