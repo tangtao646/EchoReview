@@ -43,7 +43,7 @@ class DashScopeSTTEngine @Inject constructor(
     private fun createWebSocketFlow(audioFlow: Flow<ByteArray>): Flow<StreamSegment> = callbackFlow {
         Log.d(TAG, "开始准备流式转写连接...")
 
-        val apiKey = preferencesRepository.apiKeyFlow.take(1).singleOrNull()
+        val apiKey = preferencesRepository.dashScopeApiKeyFlow.take(1).singleOrNull()
         if (apiKey.isNullOrBlank()) {
             close(Exception("错误: 请先在设置中配置 API Key"))
             return@callbackFlow

@@ -2,10 +2,10 @@ package com.dream.echoreview.ui.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dream.echoreview.data.repository.AIProvider
 import com.dream.echoreview.domain.model.InterviewSession
+import com.dream.echoreview.domain.repository.IAudioPlayer
 import com.dream.echoreview.domain.repository.IInterviewRepository
-import com.dream.echoreview.domain.repository.ILLMProvider
-import com.dream.echoreview.domain.repository.ISTTEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,13 +13,10 @@ import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
 
-import com.dream.echoreview.domain.repository.IAudioPlayer
-// ...
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val repository: IInterviewRepository,
-    private val sttEngine: ISTTEngine,
-    private val llmProvider: ILLMProvider,
+    private val aiProvider: AIProvider,
     private val audioPlayer: IAudioPlayer
 ) : ViewModel() {
 
@@ -28,7 +25,25 @@ class DetailViewModel @Inject constructor(
     val duration = audioPlayer.duration
 
     private val _session = MutableStateFlow<InterviewSession?>(null)
-// ...
+    val session = _session.asStateFlow()
+
+    private val _aiSummary = MutableStateFlow("")
+    val aiSummary = _aiSummary.asStateFlow()
+
+    private val _isGenerating = MutableStateFlow(false)
+    val isGenerating = _isGenerating.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+
+    fun loadSession(id: String) {
+        viewModelScope.launch {
+            val s = repository.getSessionById(id)
+            _session.value = s
+            _aiSummary.value = s?.aiSummary ?: ""
+        }
+    }
+
     fun togglePlayback() {
         val currentSession = _session.value ?: return
         if (isPlaying.value) {
@@ -42,54 +57,39 @@ class DetailViewModel @Inject constructor(
         audioPlayer.seekTo(position)
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        audioPlayer.stop()
-    }
-    val session = _session.asStateFlow()
-
-    private val _isProcessing = MutableStateFlow(false)
-    val isProcessing = _isProcessing.asStateFlow()
-
-    private val _error = MutableStateFlow<String?>(null)
-    val error = _error.asStateFlow()
-
-    fun loadSession(id: String) {
-        viewModelScope.launch {
-            _session.value = repository.getSessionById(id)
-        }
-    }
-
     fun generateAIReview() {
         val currentSession = _session.value ?: return
+        val transcript = currentSession.transcript ?: "暂无转录内容"
         
         viewModelScope.launch {
-            _isProcessing.value = true
+            _isGenerating.value = true
+            _aiSummary.value = "" // 重置总结内容用于流式展示
+            
             try {
-                // 1. STT
-                val audioFile = File(currentSession.audioPath)
-                val transcriptionResult = sttEngine.transcribe(audioFile)
-                val transcript = transcriptionResult.getOrThrow()
-
-                // 2. LLM Summary
-                val summaryResult = llmProvider.generateSummary(transcript)
-                val summary = summaryResult.getOrThrow()
-
-                // 3. Update Local DB
-                repository.updateResults(currentSession.id, transcript, summary)
+                val aiServiceResult = aiProvider.getCurrentService()
+                val aiService = aiServiceResult.getOrElse { throw it }
                 
-                // 4. Reload
-                loadSession(currentSession.id)
+                aiService.generateSummaryStream(transcript).collect { chunk ->
+                    _aiSummary.value += chunk
+                }
+                
+                // 完成后更新数据库并同步当前 Session 状态
+                repository.updateResults(currentSession.id, transcript, _aiSummary.value)
+                _session.value = _session.value?.copy(aiSummary = _aiSummary.value)
             } catch (e: Exception) {
-                _error.value = "生成失败: ${e.localizedMessage}"
-                e.printStackTrace()
+                _error.value = "总结失败: ${e.localizedMessage}"
             } finally {
-                _isProcessing.value = false
+                _isGenerating.value = false
             }
         }
     }
 
     fun clearError() {
         _error.value = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        audioPlayer.stop()
     }
 }

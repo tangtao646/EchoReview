@@ -1,6 +1,8 @@
 package com.dream.echoreview.di
 
 import com.dream.echoreview.data.remote.DashScopeApi
+import com.dream.echoreview.data.remote.DeepSeekApi
+import com.dream.echoreview.data.remote.GeminiApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -34,5 +36,27 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(DashScopeApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDeepSeekApi(client: OkHttpClient): DeepSeekApi {
+        return Retrofit.Builder()
+            .baseUrl("https://api.deepseek.com/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(DeepSeekApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGeminiApi(client: OkHttpClient): GeminiApi {
+        return Retrofit.Builder()
+            .baseUrl("https://generativelanguage.googleapis.com/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(GeminiApi::class.java)
     }
 }

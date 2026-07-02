@@ -16,15 +16,31 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
 class UserPreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val apiKey = stringPreferencesKey("api_key")
-
-    val apiKeyFlow: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[apiKey]
+    object Keys {
+        val DASHSCOPE_API_KEY = stringPreferencesKey("api_key") // 保持与旧版本一致
+        val DEEPSEEK_API_KEY = stringPreferencesKey("deepseek_api_key")
+        val GEMINI_API_KEY = stringPreferencesKey("gemini_api_key")
+        val SELECTED_AI_MODEL = stringPreferencesKey("selected_ai_model")
     }
 
-    suspend fun updateApiKey(key: String) {
-        context.dataStore.edit { preferences ->
-            preferences[apiKey] = key
-        }
+    val dashScopeApiKeyFlow: Flow<String?> = context.dataStore.data.map { it[Keys.DASHSCOPE_API_KEY] }
+    val deepSeekApiKeyFlow: Flow<String?> = context.dataStore.data.map { it[Keys.DEEPSEEK_API_KEY] }
+    val geminiApiKeyFlow: Flow<String?> = context.dataStore.data.map { it[Keys.GEMINI_API_KEY] }
+    val selectedModelFlow: Flow<String> = context.dataStore.data.map { it[Keys.SELECTED_AI_MODEL] ?: "DeepSeek" }
+
+    suspend fun updateDashScopeApiKey(key: String) {
+        context.dataStore.edit { it[Keys.DASHSCOPE_API_KEY] = key }
+    }
+
+    suspend fun updateDeepSeekKey(key: String) {
+        context.dataStore.edit { it[Keys.DEEPSEEK_API_KEY] = key }
+    }
+
+    suspend fun updateGeminiKey(key: String) {
+        context.dataStore.edit { it[Keys.GEMINI_API_KEY] = key }
+    }
+
+    suspend fun updateSelectedModel(model: String) {
+        context.dataStore.edit { it[Keys.SELECTED_AI_MODEL] = model }
     }
 }

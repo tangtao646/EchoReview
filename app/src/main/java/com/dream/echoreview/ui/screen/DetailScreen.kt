@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import java.io.File
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,7 +25,8 @@ fun DetailScreen(
     viewModel: DetailViewModel = hiltViewModel()
 ) {
     val session by viewModel.session.collectAsState()
-    val isProcessing by viewModel.isProcessing.collectAsState()
+    val isGenerating by viewModel.isGenerating.collectAsState()
+    val aiSummary by viewModel.aiSummary.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
     val currentPos by viewModel.currentPosition.collectAsState()
     val duration by viewModel.duration.collectAsState()
@@ -75,40 +76,77 @@ fun DetailScreen(
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                if (currentSession.aiSummary == null && !isProcessing) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("尚未生成 AI 复盘", fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { viewModel.generateAIReview() }) {
-                                Text("立即生成总结")
-                            }
+                // 1. 复盘总结标题栏
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "复盘总结",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    // 当已有内容且不在生成时，显示“重新总结”图标
+                    if (aiSummary.isNotBlank() && !isGenerating) {
+                        IconButton(onClick = { viewModel.generateAIReview() }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "重新总结", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
 
-                if (isProcessing) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 2. 总结内容区域
+                if (aiSummary.isBlank() && !isGenerating) {
+                    // 情况 A: 内容为空且不在生成 -> 显示居中的“开始总结”按钮
+                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
+                        Button(
+                            onClick = { viewModel.generateAIReview() },
+                            modifier = Modifier.height(48.dp),
+                            contentPadding = PaddingValues(horizontal = 32.dp)
+                        ) {
+                            Text("开始总结")
+                        }
+                    }
+                } else {
+                    // 情况 B: 正在生成或已有内容 -> 显示文本
+                    Text(
+                        text = aiSummary,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.fillMaxWidth(),
+                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                    )
+                    
+                    if (isGenerating) {
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                        )
                     }
                 }
 
-                if (currentSession.aiSummary != null) {
-                    Text("AI 复盘总结", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(currentSession.aiSummary)
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    Text("面试转录文本", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.secondary)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(currentSession.transcript ?: "", style = MaterialTheme.typography.bodyMedium)
-                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 24.dp))
+
+                // 3. 面试转录文本标题
+                Text(
+                    "面试转录文本",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
                 
-                Spacer(modifier = Modifier.height(100.dp)) // 为播放栏预留空间
+                // 转录文本内容
+                Text(
+                    currentSession.transcript ?: "暂无转录内容",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                Spacer(modifier = Modifier.height(120.dp)) // 底部预留空间防止被播放栏遮挡
             }
         }
     }
