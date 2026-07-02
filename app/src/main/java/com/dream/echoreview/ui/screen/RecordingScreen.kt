@@ -1,6 +1,7 @@
 package com.dream.echoreview.ui.screen
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -14,6 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.LaunchedEffect
 import com.dream.echoreview.domain.repository.RecordingState
 import com.dream.echoreview.ui.component.FluidWaveVisualizer
 
@@ -79,9 +82,19 @@ fun RecordingScreen(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
+
+                    // 1. 记住滚动状态
+                    val scrollState = rememberScrollState()
+
+                    // 2. 监听文本变化，一旦有新字进来，自动平滑滚到底部
+                    LaunchedEffect(realtimeText) {
+                        scrollState.animateScrollTo(scrollState.maxValue)
+                    }
+
                     Text(
                         text = realtimeText.ifEmpty { "正在监听您的发言..." },
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(16.dp)
+                            .verticalScroll(scrollState),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

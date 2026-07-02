@@ -93,7 +93,6 @@ class RecordingViewModel @Inject constructor(
                             // 句内覆盖：直接替换当前未完结的临时文本
                             currentPartialText = segment.text
                         }
-
                         // 最终暴露给 UI 的拼接结果
                         val fullTranscript = finishedSentences.joinToString("") + currentPartialText
                         _realtimeTranscript.value = fullTranscript

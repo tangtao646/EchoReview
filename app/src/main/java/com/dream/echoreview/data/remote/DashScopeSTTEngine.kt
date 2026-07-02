@@ -92,13 +92,13 @@ class DashScopeSTTEngine @Inject constructor(
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d(TAG, "收到消息: $text")
+                //Log.d(TAG, "收到消息: $text")
                 try {
                     val response = gson.fromJson(text, JsonObject::class.java)
                     val header = response.getAsJsonObject("header")
-                    val action = header?.get("action")?.asString
+                    val event = header?.get("event")?.asString
 
-                    if (action == "result-generated") {
+                    if (event == "result-generated") {
                         val payload = response.getAsJsonObject("payload")
                         val output = payload?.getAsJsonObject("output")
                         val sentence = output?.getAsJsonObject("sentence") ?: return
@@ -109,15 +109,15 @@ class DashScopeSTTEngine @Inject constructor(
 
                         // 2. 核心去重判定：判定 end_time 是否存在且非空
                         val isFinal = sentence.has("end_time") && !sentence.get("end_time").isJsonNull
-
+                        Log.d(TAG, "收到消息：$textContent")
                         // 3. 发送封装后的领域模型
                         trySend(StreamSegment(
                             text = textContent,
                             isFinal = isFinal,
                             beginTime = beginTime
                         ))
-                    } else if (action == "task-failed") {
-                        val errMsg = header?.get("error_message")?.asString ?: "未知错误"
+                    } else if (event == "task-failed") {
+                        val errMsg = header.get("error_message")?.asString ?: "未知错误"
                         Log.e(TAG, "阿里服务端任务失败: $errMsg")
                         close(Exception("服务端任务失败: $errMsg"))
                     }
