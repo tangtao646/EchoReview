@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">EchoReview</string>
+    <string name="app_name">面试复盘工具</string>
 
     <!-- 通用 -->
     <string name="confirm_delete">确认删除</string>
