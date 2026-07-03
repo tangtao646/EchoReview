@@ -21,7 +21,7 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    
+
     private val permissionsToRequest = mutableListOf(
         Manifest.permission.RECORD_AUDIO
     ).apply {
@@ -37,11 +37,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
+
         setContent {
             EchoReviewTheme {
                 val navController = rememberNavController()
-                
+
                 LaunchedEffect(Unit) {
                     permissionLauncher.launch(permissionsToRequest.toTypedArray())
                 }
@@ -66,7 +66,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("recording") {
                         RecordingScreen(
-                            onBack = { navController.popBackStack() }
+                            onBack = { navController.popBackStack() },
+                            onNavigateToSettings = { navController.navigate("settings") },
+                            onNavigateToDetail = { id -> navController.navigate("detail/$id") }
                         )
                     }
                     composable("settings") {

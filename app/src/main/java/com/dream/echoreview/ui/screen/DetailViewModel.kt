@@ -45,6 +45,9 @@ class DetailViewModel @Inject constructor(
             val s = repository.getSessionById(id)
             _session.value = s
             _aiSummary.value = s?.aiSummary ?: ""
+            if (_aiSummary.value.isEmpty()) {
+                generateAIReview()
+            }
         }
     }
 

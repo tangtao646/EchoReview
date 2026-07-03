@@ -33,6 +33,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun RecordingScreen(
     onBack: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToDetail: (String) -> Unit,
     viewModel: RecordingViewModel = hiltViewModel()
 ) {
     val state by viewModel.recordingState.collectAsState()
@@ -44,6 +46,22 @@ fun RecordingScreen(
 
     val isRecording = state == RecordingState.RECORDING
     var showDiscardDialog by remember { mutableStateOf(false) }
+    // 1. 声明控制“密钥缺失”弹窗的状态
+    var showApiKeyDialog by remember { mutableStateOf(false) }
+
+    // 2. 核心副作用：监听 ViewModel 的强阻断事件
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is RecordingUiEvent.ShowApiKeyMissingDialog -> {
+                    showApiKeyDialog = true
+                }
+                is RecordingUiEvent.NavigateToDetail->{
+                    onNavigateToDetail(event.sessionId)
+                }
+            }
+        }
+    }
 
     if (showDiscardDialog) {
         AlertDialog(
@@ -64,6 +82,29 @@ fun RecordingScreen(
             dismissButton = {
                 TextButton(onClick = { showDiscardDialog = false }) {
                     Text(stringResource(R.string.continue_recording))
+                }
+            }
+        )
+    }
+
+    if (showApiKeyDialog) {
+        AlertDialog(
+            onDismissRequest = { showApiKeyDialog = false },
+            title = { Text("缺少 API 密钥") },
+            text = { Text("检测到您的语音转录或 AI 模型的 API Key 未填写，无法开始流式录制。请先前往设置页面完善密钥配置。") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showApiKeyDialog = false
+                        onNavigateToSettings()
+                    }
+                ) {
+                    Text("去设置页填写")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showApiKeyDialog = false }) {
+                    Text("取消", color = Color.Gray)
                 }
             }
         )

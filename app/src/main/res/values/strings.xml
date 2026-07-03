@@ -39,7 +39,7 @@
     <string name="stage_final">终面</string>
     <string name="stage_hr">HR面</string>
     <string name="start_interview_recording">开始面试录音</string>
-    <string name="listening">正在监听您的发言...</string>
+    <string name="listening">正在倾听您的发言...</string>
     <string name="long_press_to_stop">长按结束</string>
 
     <!-- 历史记录 -->
