@@ -1,10 +1,13 @@
 package com.dream.echoreview.ui.screen
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dream.echoreview.R
 import com.dream.echoreview.domain.model.InterviewSession
 import com.dream.echoreview.domain.repository.IInterviewRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -14,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: IInterviewRepository
+    private val repository: IInterviewRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     val sessions: StateFlow<List<InterviewSession>> = repository.getAllSessions()
@@ -27,8 +31,8 @@ class HomeViewModel @Inject constructor(
     val totalDurationText: StateFlow<String> = sessions.map { list ->
         val totalMs = list.sumOf { it.durationMillis }
         val totalMinutes = totalMs / (1000 * 60)
-        "$totalMinutes 分钟"
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "0 分钟")
+        context.getString(R.string.duration_minutes, totalMinutes.toString())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), context.getString(R.string.zero_minutes))
 
     val completionRate: StateFlow<Float> = sessions.map { list ->
         if (list.isEmpty()) 0f

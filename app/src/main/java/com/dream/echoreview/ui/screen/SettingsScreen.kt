@@ -10,12 +10,14 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dream.echoreview.R
 
 /**
  * 自定义固定长度遮罩转换器
@@ -24,14 +26,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 class FixedLengthMaskTransformation(private val maskChar: Char = '•', private val length: Int = 12) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         if (text.isEmpty()) return TransformedText(text, OffsetMapping.Identity)
-        
+
         val out = maskChar.toString().repeat(length)
-        
+
         val offsetMapping = object : OffsetMapping {
             override fun originalToTransformed(offset: Int): Int = if (offset > 0) length else 0
             override fun transformedToOriginal(offset: Int): Int = if (offset > 0) text.length else 0
         }
-        
+
         return TransformedText(AnnotatedString(out), offsetMapping)
     }
 }
@@ -71,10 +73,10 @@ fun SettingsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("设置") },
+                title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -87,12 +89,12 @@ fun SettingsScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Text("模型选择 (用于复盘总结)", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.model_selection), style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             val models = listOf("DeepSeek", "Gemini", "DashScope")
             var expanded by remember { mutableStateOf(false) }
-            
+
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded }
@@ -101,7 +103,7 @@ fun SettingsScreen(
                     value = selectedModel,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("当前选中的模型") },
+                    label = { Text(stringResource(R.string.current_model)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
@@ -125,25 +127,25 @@ fun SettingsScreen(
             HorizontalDivider()
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("API Key 配置", style = MaterialTheme.typography.titleMedium)
-            Text("所有 Key 将加密存储在本地，不会上传至第三方服务器", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-            
+            Text(stringResource(R.string.api_key_config), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.api_key_disclaimer), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+
             Spacer(modifier = Modifier.height(16.dp))
 
             ApiKeyField(
-                label = "DashScope API Key (阿里百炼)",
+                label = stringResource(R.string.dashscope_api_key_label),
                 value = dashScopeInput,
                 onValueChange = { dashScopeInput = it },
                 isVisible = dashScopeVisible,
                 onVisibilityChange = { dashScopeVisible = it },
                 onSave = { viewModel.updateDashScopeApiKey(dashScopeInput) },
-                helperText = "用于 Paraformer 语音转文字"
+                helperText = stringResource(R.string.dashscope_api_key_helper)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             ApiKeyField(
-                label = "DeepSeek API Key",
+                label = stringResource(R.string.deepseek_api_key_label),
                 value = deepSeekInput,
                 onValueChange = { deepSeekInput = it },
                 isVisible = deepSeekVisible,
@@ -154,7 +156,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             ApiKeyField(
-                label = "Gemini API Key",
+                label = stringResource(R.string.gemini_api_key_label),
                 value = geminiInput,
                 onValueChange = { geminiInput = it },
                 isVisible = geminiVisible,
@@ -190,11 +192,11 @@ fun ApiKeyField(
                     IconButton(onClick = { onVisibilityChange(!isVisible) }) {
                         Icon(
                             imageVector = if (isVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = if (isVisible) "隐藏" else "显示"
+                            contentDescription = if (isVisible) stringResource(R.string.hide) else stringResource(R.string.show)
                         )
                     }
                     TextButton(onClick = onSave, enabled = value.isNotBlank()) {
-                        Text("保存")
+                        Text(stringResource(R.string.save))
                     }
                 }
             }

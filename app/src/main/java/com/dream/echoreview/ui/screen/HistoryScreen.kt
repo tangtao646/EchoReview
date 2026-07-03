@@ -9,9 +9,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dream.echoreview.R
 import com.dream.echoreview.domain.model.InterviewSession
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,8 +29,15 @@ fun HistoryScreen(
     if (sessionToDelete != null) {
         AlertDialog(
             onDismissRequest = { sessionToDelete = null },
-            title = { Text("确认删除") },
-            text = { Text("确定要删除与 \"${sessionToDelete?.companyName?.ifEmpty { "未命名公司" }}\" 的面试记录吗？") },
+            title = { Text(stringResource(R.string.confirm_delete)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.confirm_delete_message,
+                        sessionToDelete?.companyName?.ifEmpty { stringResource(R.string.unnamed_company) } ?: ""
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -36,12 +45,12 @@ fun HistoryScreen(
                         sessionToDelete = null
                     }
                 ) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { sessionToDelete = null }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -51,10 +60,10 @@ fun HistoryScreen(
         containerColor = Color(0xFFF8F9FA),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("全部记录", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.all_records), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )

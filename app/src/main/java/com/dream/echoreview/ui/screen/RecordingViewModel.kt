@@ -5,6 +5,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dream.echoreview.R
 import com.dream.echoreview.data.audio.RecordingService
 import com.dream.echoreview.domain.model.InterviewSession
 import com.dream.echoreview.domain.model.StreamSegment
@@ -42,18 +43,22 @@ class RecordingViewModel @Inject constructor(
             val hours = (ms / (1000 * 60 * 60))
             String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "00:00:00")
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            app.getString(R.string.zero_time)
+        )
 
     private val _companyName = MutableStateFlow("")
     val companyName = _companyName.asStateFlow()
 
-    private val _interviewStage = MutableStateFlow("初试")
+    private val _interviewStage = MutableStateFlow(app.getString(R.string.stage_initial))
     val interviewStage = _interviewStage.asStateFlow()
 
     private val _realtimeTranscript = MutableStateFlow("")
     val realtimeTranscript = _realtimeTranscript.asStateFlow()
 
-    // 内部维护的状态容器，实现“句内覆盖、句间追加”
+    // 内部维护的状态容器，实现"句内覆盖、句间追加"
     private val finishedSentences = mutableListOf<String>()
     private var currentPartialText = ""
 
@@ -85,10 +90,11 @@ class RecordingViewModel @Inject constructor(
         sttJob = viewModelScope.launch {
             sttEngine.transcribeStream(audioRecorder.audioFlow)
                 .flowOn(Dispatchers.IO)
-                .onStart { _realtimeTranscript.value = "空空如也..." }
+                .onStart { _realtimeTranscript.value = app.getString(R.string.listening) }
                 .catch { e ->
                     Log.e("RecordingVM", "STT Error: ${e.message}")
-                    _realtimeTranscript.value = "转写连接失败: ${e.message}"
+                    _realtimeTranscript.value =
+                        app.getString(R.string.stt_connection_failed, e.message ?: "")
                 }
                 .collect { segment ->
                     withContext(Dispatchers.Main) {
@@ -141,7 +147,10 @@ class RecordingViewModel @Inject constructor(
         app.startService(intent)
 
         // 保存最终文字和时长
-        val finalTranscript = _realtimeTranscript.value
+        val listeningHolder = app.getString(R.string.listening)
+        val emptyTesHolder = app.getString(R.string.empty_text_placeholder)
+        val finalTranscript =
+            if (_realtimeTranscript.value == listeningHolder) emptyTesHolder else _realtimeTranscript.value
         viewModelScope.launch {
             repository.updateResults(currentId, finalTranscript, "", finalDuration)
         }

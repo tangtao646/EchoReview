@@ -1,16 +1,20 @@
 package com.dream.echoreview.ui.screen
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dream.echoreview.R
 import com.dream.echoreview.data.repository.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _saveResult = MutableSharedFlow<String>()
@@ -31,28 +35,28 @@ class SettingsViewModel @Inject constructor(
     fun updateDashScopeApiKey(key: String) {
         viewModelScope.launch {
             preferencesRepository.updateDashScopeApiKey(key)
-            _saveResult.emit("DashScope Key 已保存")
+            _saveResult.emit(context.getString(R.string.dashscope_key_saved))
         }
     }
 
     fun updateDeepSeekKey(key: String) {
         viewModelScope.launch {
             preferencesRepository.updateDeepSeekKey(key)
-            _saveResult.emit("DeepSeek Key 已保存")
+            _saveResult.emit(context.getString(R.string.deepseek_key_saved))
         }
     }
 
     fun updateGeminiKey(key: String) {
         viewModelScope.launch {
             preferencesRepository.updateGeminiKey(key)
-            _saveResult.emit("Gemini Key 已保存")
+            _saveResult.emit(context.getString(R.string.gemini_key_saved))
         }
     }
 
     fun updateSelectedModel(model: String) {
         viewModelScope.launch {
             preferencesRepository.updateSelectedModel(model)
-            _saveResult.emit("已切换至模型: $model")
+            _saveResult.emit(context.getString(R.string.model_switched, model))
         }
     }
 }

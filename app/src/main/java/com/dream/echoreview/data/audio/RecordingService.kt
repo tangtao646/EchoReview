@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.dream.echoreview.MainActivity
+import com.dream.echoreview.R
 import com.dream.echoreview.domain.repository.IAudioRecorder
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
@@ -105,12 +106,12 @@ class RecordingService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("正在录制面试中...")
-            .setContentText("已录制: $duration")
+            .setContentTitle(getString(R.string.notification_recording))
+            .setContentText(getString(R.string.notification_recorded, duration))
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true)
             .setContentIntent(contentIntent)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "停止并保存", stopIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.notification_stop_save), stopIntent)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
@@ -119,7 +120,7 @@ class RecordingService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "录音服务",
+                getString(R.string.recording_service),
                 NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)

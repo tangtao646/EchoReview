@@ -19,10 +19,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dream.echoreview.R
 import com.dream.echoreview.domain.repository.RecordingState
 import com.dream.echoreview.ui.component.FluidWaveVisualizer
 import kotlinx.coroutines.delay
@@ -46,8 +48,8 @@ fun RecordingScreen(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("放弃录音？") },
-            text = { Text("您确定要放弃本次录音吗？该操作将删除已录制的内容且无法撤销。") },
+            title = { Text(stringResource(R.string.discard_recording_title)) },
+            text = { Text(stringResource(R.string.discard_recording_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -56,12 +58,12 @@ fun RecordingScreen(
                         onBack()
                     }
                 ) {
-                    Text("放弃", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.discard), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDiscardDialog = false }) {
-                    Text("继续录音")
+                    Text(stringResource(R.string.continue_recording))
                 }
             }
         )
@@ -91,7 +93,7 @@ fun RecordingScreen(
                             }
                         }
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "关闭")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -115,7 +117,7 @@ fun RecordingScreen(
                 OutlinedTextField(
                     value = companyName,
                     onValueChange = { viewModel.updateCompanyName(it) },
-                    label = { Text("公司名称") },
+                    label = { Text(stringResource(R.string.company_name)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -124,15 +126,20 @@ fun RecordingScreen(
                     )
                 )
                 Spacer(modifier = Modifier.height(24.dp))
-                
-                Text("面试阶段", style = MaterialTheme.typography.titleSmall, color = Color.Gray, modifier = Modifier.align(Alignment.Start))
+
+                Text(stringResource(R.string.interview_stage), style = MaterialTheme.typography.titleSmall, color = Color.Gray, modifier = Modifier.align(Alignment.Start))
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val stages = listOf("初试", "复试", "终面", "HR面")
+                    val stages = listOf(
+                        stringResource(R.string.stage_initial),
+                        stringResource(R.string.stage_second),
+                        stringResource(R.string.stage_final),
+                        stringResource(R.string.stage_hr)
+                    )
                     stages.forEach { stage ->
                         FilterChip(
                             selected = interviewStage == stage,
@@ -150,19 +157,19 @@ fun RecordingScreen(
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(16.dp)
                 ) {
-                    Text("开始面试录音", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.start_interview_recording), style = MaterialTheme.typography.titleMedium)
                 }
             } else {
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
-                    duration, 
-                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp), 
+                    duration,
+                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp),
                     fontWeight = FontWeight.Light,
                     color = contentColor
                 )
-                
+
                 Spacer(modifier = Modifier.height(48.dp))
-                
+
                 FluidWaveVisualizer(
                     amplitude = amplitude,
                     modifier = Modifier.height(150.dp)
@@ -185,7 +192,7 @@ fun RecordingScreen(
 
                     Box(modifier = Modifier.padding(20.dp)) {
                         AnimatedContent(
-                            targetState = realtimeText.ifEmpty { "正在监听您的发言..." },
+                            targetState = realtimeText.ifEmpty { stringResource(R.string.listening) },
                             transitionSpec = {
                                 (fadeIn(animationSpec = tween(300)) + slideInVertically { it / 2 })
                                     .togetherWith(fadeOut(animationSpec = tween(300)))
@@ -202,7 +209,7 @@ fun RecordingScreen(
                 }
 
 
-                
+
                 Spacer(modifier = Modifier.height(40.dp))
 
                 // 长按结束录音按钮
@@ -221,7 +228,7 @@ fun LongPressStopButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    
+
     // 进度动画状态 (0f 到 1f)
     var progress by remember { mutableStateOf(0f) }
     val animatedProgress by animateFloatAsState(
@@ -277,7 +284,7 @@ fun LongPressStopButton(
                     Icon(Icons.Default.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
                 } else {
                     Text(
-                        "长按结束",
+                        stringResource(R.string.long_press_to_stop),
                         style = MaterialTheme.typography.labelLarge,
                         color = Color.White,
                         fontWeight = FontWeight.Bold

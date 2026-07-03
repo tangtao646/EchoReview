@@ -22,10 +22,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dream.echoreview.R
 import com.dream.echoreview.domain.model.InterviewSession
 import java.text.SimpleDateFormat
 import java.util.*
@@ -49,8 +51,15 @@ fun HomeScreen(
     if (sessionToDelete != null) {
         AlertDialog(
             onDismissRequest = { sessionToDelete = null },
-            title = { Text("确认删除") },
-            text = { Text("确定要删除与 \"${sessionToDelete?.companyName?.ifEmpty { "未命名公司" }}\" 的面试记录吗？") },
+            title = { Text(stringResource(R.string.confirm_delete)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.confirm_delete_message,
+                        sessionToDelete?.companyName?.ifEmpty { stringResource(R.string.unnamed_company) } ?: ""
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -58,12 +67,12 @@ fun HomeScreen(
                         sessionToDelete = null
                     }
                 ) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { sessionToDelete = null }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -78,7 +87,7 @@ fun HomeScreen(
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(
                             Icons.Default.Settings,
-                            contentDescription = "设置",
+                            contentDescription = stringResource(R.string.settings),
                             tint = Color.Gray,
                             modifier = Modifier.size(20.dp)
                         )
@@ -99,7 +108,7 @@ fun HomeScreen(
             ) {
                 Icon(
                     Icons.Default.MicNone,
-                    contentDescription = "开始录音",
+                    contentDescription = stringResource(R.string.start_recording),
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -111,7 +120,7 @@ fun HomeScreen(
                 .padding(padding)
         ) {
             Text(
-                "概览",
+                stringResource(R.string.overview),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Black,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
@@ -131,12 +140,12 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "最近记录",
+                    stringResource(R.string.recent_records),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 TextButton(onClick = onNavigateToHistory, contentPadding = PaddingValues(0.dp)) {
-                    Text("查看全部", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.view_all), style = MaterialTheme.typography.labelMedium)
                 }
             }
 
@@ -222,7 +231,7 @@ fun BentoDashboard(
                         color = Color.White
                     )
                     Text(
-                        "复盘完成度",
+                        stringResource(R.string.review_completion_rate),
                         color = Color.White.copy(alpha = 0.8f),
                         style = MaterialTheme.typography.labelSmall
                     )
@@ -241,7 +250,7 @@ fun BentoDashboard(
             BentoSmallCard(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.History,
-                label = "累计面试",
+                label = stringResource(R.string.total_interviews),
                 value = "$sessionCount",
                 containerColor = Color(0xFFFFE0B2)
             )
@@ -249,7 +258,7 @@ fun BentoDashboard(
             BentoSmallCard(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.MicNone,
-                label = "总时长",
+                label = stringResource(R.string.total_duration),
                 value = totalDuration.replace(" 分钟", "m"),
                 containerColor = Color(0xFFE1F5FE)
             )
@@ -350,7 +359,7 @@ fun ModernSessionItem(
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = session.companyName.ifEmpty { "未命名公司" },
+                        text = session.companyName.ifEmpty { stringResource(R.string.unnamed_company) },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1
@@ -371,7 +380,7 @@ fun ModernSessionItem(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = SimpleDateFormat("MM月dd日 · HH:mm", Locale.getDefault()).format(
+                        text = SimpleDateFormat(stringResource(R.string.date_format), Locale.getDefault()).format(
                             Date(
                                 session.timestamp
                             )
@@ -385,9 +394,9 @@ fun ModernSessionItem(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val (tagText, tagColor) = if (!session.aiSummary.isNullOrEmpty()) {
-                        "已复盘" to Color(0xFF4CAF50)
+                        stringResource(R.string.reviewed) to Color(0xFF4CAF50)
                     } else {
-                        "待处理" to Color(0xFFFF9800)
+                        stringResource(R.string.pending) to Color(0xFFFF9800)
                     }
 
                     Text(
@@ -422,7 +431,7 @@ fun ModernSessionItem(
             IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "删除",
+                    contentDescription = stringResource(R.string.delete),
                     tint = Color.LightGray,
                     modifier = Modifier.size(18.dp)
                 )
@@ -473,12 +482,12 @@ fun EmptyState(onStart: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "开启你的第一场面试复盘",
+            stringResource(R.string.start_first_review),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold
         )
         Text(
-            "点击下方按钮开始录制",
+            stringResource(R.string.click_to_start_recording),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             style = MaterialTheme.typography.labelSmall,
             color = Color.Gray,
@@ -489,7 +498,7 @@ fun EmptyState(onStart: () -> Unit) {
             onClick = onStart,
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("开始录音")
+            Text(stringResource(R.string.start_recording))
         }
     }
 }

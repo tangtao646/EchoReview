@@ -12,9 +12,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dream.echoreview.R
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,10 +50,10 @@ fun DetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(session?.companyName ?: "详情") },
+                title = { Text(session?.companyName ?: stringResource(R.string.detail)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -83,16 +85,16 @@ fun DetailScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "复盘总结",
+                        stringResource(R.string.review_summary),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
-                    
-                    // 当已有内容且不在生成时，显示“重新总结”图标
+
+                    // 当已有内容且不在生成时，显示"重新总结"图标
                     if (aiSummary.isNotBlank() && !isGenerating) {
                         IconButton(onClick = { viewModel.generateAIReview() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "重新总结", tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.regenerate), tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -101,14 +103,14 @@ fun DetailScreen(
 
                 // 2. 总结内容区域
                 if (aiSummary.isBlank() && !isGenerating) {
-                    // 情况 A: 内容为空且不在生成 -> 显示居中的“开始总结”按钮
+                    // 情况 A: 内容为空且不在生成 -> 显示居中的"开始总结"按钮
                     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
                         Button(
                             onClick = { viewModel.generateAIReview() },
                             modifier = Modifier.height(48.dp),
                             contentPadding = PaddingValues(horizontal = 32.dp)
                         ) {
-                            Text("开始总结")
+                            Text(stringResource(R.string.start_summary))
                         }
                     }
                 } else {
@@ -119,7 +121,7 @@ fun DetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
                     )
-                    
+
                     if (isGenerating) {
                         LinearProgressIndicator(
                             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
@@ -132,20 +134,20 @@ fun DetailScreen(
 
                 // 3. 面试转录文本标题
                 Text(
-                    "面试转录文本",
+                    stringResource(R.string.interview_transcript),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 // 转录文本内容
                 Text(
-                    currentSession.transcript ?: "暂无转录内容",
+                    currentSession.transcript ?: stringResource(R.string.no_transcript),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 Spacer(modifier = Modifier.height(120.dp)) // 底部预留空间防止被播放栏遮挡
             }
         }
@@ -184,7 +186,7 @@ fun PlaybackBar(
                 IconButton(onClick = onTogglePlay, modifier = Modifier.size(48.dp)) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (isPlaying) "暂停" else "播放",
+                        contentDescription = if (isPlaying) stringResource(R.string.pause) else stringResource(R.string.play),
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -200,7 +202,7 @@ private fun formatTime(ms: Long): String {
     val hours = totalSecs / 3600
     val minutes = (totalSecs % 3600) / 60
     val seconds = totalSecs % 60
-    
+
     return if (hours > 0) {
         String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
     } else {

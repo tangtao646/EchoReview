@@ -1,11 +1,14 @@
 package com.dream.echoreview.data.remote
 
+import android.content.Context
 import android.util.Log
+import com.dream.echoreview.R
 import com.dream.echoreview.data.repository.UserPreferencesRepository
 import com.dream.echoreview.domain.model.StreamSegment
 import com.dream.echoreview.domain.repository.ISTTEngine
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
@@ -18,7 +21,8 @@ import javax.inject.Singleton
 @Singleton
 class DashScopeSTTEngine @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
-    private val okHttpClient: OkHttpClient
+    private val okHttpClient: OkHttpClient,
+    @ApplicationContext private val context: Context
 ) : ISTTEngine {
 
     private val TAG = "DashScopeSTTEngine"
@@ -26,7 +30,7 @@ class DashScopeSTTEngine @Inject constructor(
     private val baseWsUrl = "wss://dashscope.aliyuncs.com/api-ws/v1/inference"
 
     override suspend fun transcribe(audioFile: File): Result<String> {
-        return Result.failure(Exception("请使用流式转写"))
+        return Result.failure(Exception(context.getString(R.string.use_stream_transcription)))
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -45,7 +49,7 @@ class DashScopeSTTEngine @Inject constructor(
 
         val apiKey = preferencesRepository.dashScopeApiKeyFlow.take(1).singleOrNull()
         if (apiKey.isNullOrBlank()) {
-            close(Exception("错误: 请先在设置中配置 API Key"))
+            close(Exception(context.getString(R.string.stt_engine_error)))
             return@callbackFlow
         }
 

@@ -1,3 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">EchoReview</string>
+
+    <!-- 通用 -->
+    <string name="confirm_delete">确认删除</string>
+    <string name="delete">删除</string>
+    <string name="cancel">取消</string>
+    <string name="back">返回</string>
+    <string name="save">保存</string>
+    <string name="show">显示</string>
+    <string name="hide">隐藏</string>
+    <string name="settings">设置</string>
+    <string name="close">关闭</string>
+
+    <!-- 主页 -->
+    <string name="overview">概览</string>
+    <string name="recent_records">最近记录</string>
+    <string name="view_all">查看全部</string>
+    <string name="review_completion_rate">复盘完成度</string>
+    <string name="total_interviews">累计面试</string>
+    <string name="total_duration">总时长</string>
+    <string name="reviewed">已复盘</string>
+    <string name="pending">待处理</string>
+    <string name="unnamed_company">未命名公司</string>
+    <string name="start_first_review">开启你的第一场面试复盘</string>
+    <string name="click_to_start_recording">点击下方按钮开始录制</string>
+    <string name="start_recording">开始录音</string>
+
+    <!-- 录音页 -->
+    <string name="discard_recording_title">放弃录音？</string>
+    <string name="discard_recording_message">您确定要放弃本次录音吗？该操作将删除已录制的内容且无法撤销。</string>
+    <string name="discard">放弃</string>
+    <string name="continue_recording">继续录音</string>
+    <string name="company_name">公司名称</string>
+    <string name="interview_stage">面试阶段</string>
+    <string name="stage_initial">初试</string>
+    <string name="stage_second">复试</string>
+    <string name="stage_final">终面</string>
+    <string name="stage_hr">HR面</string>
+    <string name="start_interview_recording">开始面试录音</string>
+    <string name="listening">正在监听您的发言...</string>
+    <string name="long_press_to_stop">长按结束</string>
+
+    <!-- 历史记录 -->
+    <string name="all_records">全部记录</string>
+
+    <!-- 详情页 -->
+    <string name="detail">详情</string>
+    <string name="review_summary">复盘总结</string>
+    <string name="regenerate">重新总结</string>
+    <string name="start_summary">开始总结</string>
+    <string name="interview_transcript">面试转录文本</string>
+    <string name="no_transcript">暂无转录内容</string>
+    <string name="pause">暂停</string>
+    <string name="play">播放</string>
+
+    <!-- 设置 -->
+    <string name="model_selection">模型选择 (用于复盘总结)</string>
+    <string name="current_model">当前选中的模型</string>
+    <string name="api_key_config">API Key 配置</string>
+    <string name="api_key_disclaimer">所有 Key 将加密存储在本地，不会上传至第三方服务器</string>
+    <string name="dashscope_api_key_label">DashScope API Key (阿里百炼)</string>
+    <string name="dashscope_api_key_helper">用于 Paraformer 语音转文字</string>
+    <string name="deepseek_api_key_label">DeepSeek API Key</string>
+    <string name="gemini_api_key_label">Gemini API Key</string>
+
+    <!-- Toast / Snackbar 消息 -->
+    <string name="dashscope_key_saved">DashScope Key 已保存</string>
+    <string name="deepseek_key_saved">DeepSeek Key 已保存</string>
+    <string name="gemini_key_saved">Gemini Key 已保存</string>
+    <string name="model_switched">已切换至模型: %s</string>
+
+    <!-- AI 错误 -->
+    <string name="summary_failed">总结失败: %s</string>
+    <string name="stt_connection_failed">转写连接失败: %s</string>
+    <string name="deepseek_key_not_set">DeepSeek API Key 未设置</string>
+    <string name="gemini_key_not_set">Gemini API Key 未设置</string>
+    <string name="unknown_ai_model">未知的 AI 模型: %s</string>
+    <string name="please_configure_api_key">请先在设置中配置 API Key</string>
+    <string name="ai_returned_empty">AI 返回内容为空</string>
+    <string name="summary_generation_error">生成总结出错: %s</string>
+    <string name="stt_engine_error">错误: 请先在设置中配置 API Key</string>
+    <string name="use_stream_transcription">请使用流式转写</string>
+
+    <!-- 通知 -->
+    <string name="notification_recording">正在录制面试中...</string>
+    <string name="notification_recorded">已录制: %s</string>
+    <string name="notification_stop_save">停止并保存</string>
+    <string name="recording_service">录音服务</string>
+
+    <!-- AI Prompt -->
+    <string name="ai_prompt_qwen">你是一个面试复盘助手，请根据面试转录文本总结核心问题、回答表现和改进建议。</string>
+    <string name="ai_prompt_deepseek">你是一个专业的面试总结助手。请对以下面试内容进行精简、客观的总结，突出关键点。</string>
+    <string name="ai_prompt_gemini">请对以下面试内容进行精简、客观的总结：</string>
+
+    <!-- 时间/格式化 -->
+    <string name="duration_minutes">%s 分钟</string>
+    <string name="zero_minutes">0 分钟</string>
+    <string name="date_format">MM月dd日 · HH:mm</string>
+    <string name="zero_time">00:00:00</string>
+    <string name="empty_text_placeholder">空空如也...</string>
+
+    <!-- 对话框 -->
+    <string name="confirm_delete_message">确定要删除与 "%s" 的面试记录吗？</string>
 </resources>
