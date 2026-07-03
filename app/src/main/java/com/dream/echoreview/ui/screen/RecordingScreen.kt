@@ -82,7 +82,7 @@ fun RecordingScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {  },
+                title = { },
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -93,7 +93,10 @@ fun RecordingScreen(
                             }
                         }
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = stringResource(R.string.close)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -127,7 +130,12 @@ fun RecordingScreen(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Text(stringResource(R.string.interview_stage), style = MaterialTheme.typography.titleSmall, color = Color.Gray, modifier = Modifier.align(Alignment.Start))
+                Text(
+                    stringResource(R.string.interview_stage),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.Gray,
+                    modifier = Modifier.align(Alignment.Start)
+                )
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
@@ -153,11 +161,16 @@ fun RecordingScreen(
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
                     onClick = { viewModel.startRecording() },
-                    modifier = Modifier.fillMaxWidth().height(60.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp),
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(16.dp)
                 ) {
-                    Text(stringResource(R.string.start_interview_recording), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.start_interview_recording),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
             } else {
                 Spacer(modifier = Modifier.height(20.dp))
@@ -177,7 +190,7 @@ fun RecordingScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // 实时转写文字展示区 - 增加动画感
+                // 实时转写文字展示区 - 保持高性能流式渲染
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -186,25 +199,25 @@ fun RecordingScreen(
                     color = Color.White.copy(alpha = 0.05f),
                 ) {
                     val scrollState = rememberScrollState()
+
+                    // 监听实时文本变化，丝滑滚动到底部
                     LaunchedEffect(realtimeText) {
-                        scrollState.animateScrollTo(scrollState.maxValue)
+                        if (realtimeText.isNotEmpty()) {
+                            scrollState.animateScrollTo(scrollState.maxValue)
+                        }
                     }
 
-                    Box(modifier = Modifier.padding(20.dp)) {
-                        AnimatedContent(
-                            targetState = realtimeText.ifEmpty { stringResource(R.string.listening) },
-                            transitionSpec = {
-                                (fadeIn(animationSpec = tween(300)) + slideInVertically { it / 2 })
-                                    .togetherWith(fadeOut(animationSpec = tween(300)))
-                            }, label = "transcript"
-                        ) { text ->
-                            Text(
-                                text = text,
-                                modifier = Modifier.verticalScroll(scrollState),
-                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
-                                color = contentColor.copy(alpha = 0.9f)
-                            )
-                        }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp)
+                            .verticalScroll(scrollState)
+                    ) {
+                        Text(
+                            text = realtimeText.ifEmpty { stringResource(R.string.listening) },
+                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
+                            color = contentColor.copy(alpha = 0.9f)
+                        )
                     }
                 }
 
@@ -233,7 +246,10 @@ fun LongPressStopButton(
     var progress by remember { mutableStateOf(0f) }
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = if (isPressed) tween(targetDurationMs.toInt(), easing = LinearEasing) else tween(300),
+        animationSpec = if (isPressed) tween(
+            targetDurationMs.toInt(),
+            easing = LinearEasing
+        ) else tween(300),
         label = "progress"
     )
 
@@ -260,7 +276,10 @@ fun LongPressStopButton(
         }
     }
 
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.scale(if (isPressed) 1f else pulseScale)) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.scale(if (isPressed) 1f else pulseScale)
+    ) {
         // 背景进度环
         CircularProgressIndicator(
             progress = { animatedProgress },
@@ -281,7 +300,12 @@ fun LongPressStopButton(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 if (isPressed) {
-                    Icon(Icons.Default.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                    Icon(
+                        Icons.Default.Stop,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
                 } else {
                     Text(
                         stringResource(R.string.long_press_to_stop),

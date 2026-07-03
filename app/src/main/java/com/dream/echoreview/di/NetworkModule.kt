@@ -11,7 +11,19 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+
+// 定义两个注解，用于区分普通客户端和语音流客户端
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class NormalClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class StreamClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -19,11 +31,24 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideNormalOkHttpClient(): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
             })
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    @StreamClient
+    fun provideStreamOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .pingInterval(15, TimeUnit.SECONDS)
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
             .build()
     }
 

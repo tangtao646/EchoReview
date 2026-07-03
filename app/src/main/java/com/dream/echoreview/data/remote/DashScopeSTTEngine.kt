@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.dream.echoreview.R
 import com.dream.echoreview.data.repository.UserPreferencesRepository
+import com.dream.echoreview.di.StreamClient
 import com.dream.echoreview.domain.model.StreamSegment
 import com.dream.echoreview.domain.repository.ISTTEngine
 import com.google.gson.Gson
@@ -18,10 +19,13 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
+// 1. 定义一个用于指数退避重连的异常包装
+class NetworkReconnectionException(message: String, val attempt: Int) : Exception(message)
+
 @Singleton
 class DashScopeSTTEngine @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
-    private val okHttpClient: OkHttpClient,
+    @StreamClient private val okHttpClient: OkHttpClient,
     @ApplicationContext private val context: Context
 ) : ISTTEngine {
 
@@ -35,12 +39,35 @@ class DashScopeSTTEngine @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun transcribeStream(audioFlow: Flow<ByteArray>): Flow<StreamSegment> {
+        var attempt = 0
         // 使用 Flow 的经典扩展，实现自动重连机制
         return createWebSocketFlow(audioFlow)
-            .retry { cause ->
-                Log.w(TAG, "连接发生异常，准备自动重连... 异常原因: ${cause.message}")
-                delay(2000) // 延迟2秒后尝试重连，防止高频死循环
-                true // 返回 true 代表愿意继续重连
+            .retryWhen { cause, _ ->
+                // 如果是因为服务端逻辑失败(如 task-failed)，没必要重连，直接抛出终止
+                if (cause.message?.contains("服务端任务失败") == true) {
+                    return@retryWhen false
+                }
+
+                attempt++
+                if (attempt > 5) {
+                    Log.e(TAG, "重连次数达到上限($attempt 次)，彻底放弃重连")
+                    throw NetworkReconnectionException("网络环境持续异常，流式转写重连失败", attempt)
+                }
+                // 计算指数退避延迟时间: 2^attempt * 1000 毫秒，最大限制在 16 秒
+                val maxDelay = 16000L
+                val calculatedDelay = maxDelay.coerceAtMost((1 shl attempt) * 1000L)
+                // 加上 0~500ms 的随机抖动，防止重连并发冲突
+                val jitter = (0..500).random().toLong()
+                val finalDelay = calculatedDelay + jitter
+
+                Log.w(TAG, "检测到连接异常，正在进行第 $attempt 次尝试重连... 将在 ${finalDelay}ms 后重试. 原因: ${cause.message}")
+
+                delay(finalDelay)
+                true // 允许继续重试
+            }
+            .onEach {
+                // 一旦成功收到哪怕一条合法的转写数据，立即重置重连计数器
+                attempt = 0
             }
     }
 
@@ -113,7 +140,7 @@ class DashScopeSTTEngine @Inject constructor(
 
                         // 2. 核心去重判定：判定 end_time 是否存在且非空
                         val isFinal = sentence.has("end_time") && !sentence.get("end_time").isJsonNull
-                        Log.d(TAG, "收到消息：$textContent")
+                        //Log.d(TAG, "收到消息：$textContent")
                         // 3. 发送封装后的领域模型
                         trySend(StreamSegment(
                             text = textContent,

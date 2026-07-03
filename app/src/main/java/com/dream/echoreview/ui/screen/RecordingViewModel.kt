@@ -108,7 +108,7 @@ class RecordingViewModel @Inject constructor(
                         }
                         // 最终暴露给 UI 的拼接结果
                         val fullTranscript = finishedSentences.joinToString("") + currentPartialText
-                        _realtimeTranscript.value = fullTranscript
+                        _realtimeTranscript.emit(fullTranscript)
                     }
 
                 }
