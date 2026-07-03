@@ -1,5 +1,6 @@
 package com.dream.echoreview.ui.screen
 
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -9,15 +10,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dream.echoreview.domain.repository.RecordingState
 import com.dream.echoreview.ui.component.FluidWaveVisualizer
@@ -31,21 +35,73 @@ fun RecordingScreen(
 ) {
     val state by viewModel.recordingState.collectAsState()
     val companyName by viewModel.companyName.collectAsState()
+    val interviewStage by viewModel.interviewStage.collectAsState()
     val duration by viewModel.formattedDuration.collectAsState()
     val amplitude by viewModel.amplitude.collectAsState()
     val realtimeText by viewModel.realtimeTranscript.collectAsState()
 
+    val isRecording = state == RecordingState.RECORDING
+    var showDiscardDialog by remember { mutableStateOf(false) }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("放弃录音？") },
+            text = { Text("您确定要放弃本次录音吗？该操作将删除已录制的内容且无法撤销。") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.discardRecording()
+                        showDiscardDialog = false
+                        onBack()
+                    }
+                ) {
+                    Text("放弃", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text("继续录音")
+                }
+            }
+        )
+    }
+
+    // 动态背景色：录制中采用深色沉浸模式
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isRecording) Color(0xFF121212) else MaterialTheme.colorScheme.surface,
+        animationSpec = tween(1000), label = "bg"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (isRecording) Color.White else MaterialTheme.colorScheme.onSurface,
+        animationSpec = tween(1000), label = "content"
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("新建面试录音") },
+                title = {  },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                    IconButton(
+                        onClick = {
+                            if (isRecording) {
+                                showDiscardDialog = true
+                            } else {
+                                onBack()
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "关闭")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = backgroundColor,
+                    titleContentColor = contentColor,
+                    navigationIconContentColor = contentColor
+                )
             )
-        }
+        },
+        containerColor = backgroundColor
     ) { padding ->
         Column(
             modifier = Modifier
@@ -53,69 +109,106 @@ fun RecordingScreen(
                 .padding(padding)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
         ) {
-            OutlinedTextField(
-                value = companyName,
-                onValueChange = { viewModel.updateCompanyName(it) },
-                label = { Text("公司名称") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = state == RecordingState.IDLE
-            )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            if (state == RecordingState.RECORDING) {
-                Text(duration, style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
+            if (!isRecording) {
+                Spacer(modifier = Modifier.height(40.dp))
+                OutlinedTextField(
+                    value = companyName,
+                    onValueChange = { viewModel.updateCompanyName(it) },
+                    label = { Text("公司名称") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                    )
+                )
+                Spacer(modifier = Modifier.height(24.dp))
                 
-                Spacer(modifier = Modifier.height(32.dp))
+                Text("面试阶段", style = MaterialTheme.typography.titleSmall, color = Color.Gray, modifier = Modifier.align(Alignment.Start))
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val stages = listOf("初试", "复试", "终面", "HR面")
+                    stages.forEach { stage ->
+                        FilterChip(
+                            selected = interviewStage == stage,
+                            onClick = { viewModel.updateInterviewStage(stage) },
+                            label = { Text(stage) },
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+                Button(
+                    onClick = { viewModel.startRecording() },
+                    modifier = Modifier.fillMaxWidth().height(60.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Text("开始面试录音", style = MaterialTheme.typography.titleMedium)
+                }
+            } else {
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    duration, 
+                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp), 
+                    fontWeight = FontWeight.Light,
+                    color = contentColor
+                )
+                
+                Spacer(modifier = Modifier.height(48.dp))
                 
                 FluidWaveVisualizer(
                     amplitude = amplitude,
-                    modifier = Modifier.height(100.dp)
+                    modifier = Modifier.height(150.dp)
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(40.dp))
 
-                // 实时转写文字展示区
+                // 实时转写文字展示区 - 增加动画感
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 100.dp, max = 200.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(12.dp)
+                        .weight(1f)
+                        .clip(RoundedCornerShape(24.dp)),
+                    color = Color.White.copy(alpha = 0.05f),
                 ) {
                     val scrollState = rememberScrollState()
                     LaunchedEffect(realtimeText) {
                         scrollState.animateScrollTo(scrollState.maxValue)
                     }
 
-                    Text(
-                        text = realtimeText.ifEmpty { "正在监听您的发言..." },
-                        modifier = Modifier.padding(16.dp)
-                            .verticalScroll(scrollState),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Box(modifier = Modifier.padding(20.dp)) {
+                        AnimatedContent(
+                            targetState = realtimeText.ifEmpty { "正在监听您的发言..." },
+                            transitionSpec = {
+                                (fadeIn(animationSpec = tween(300)) + slideInVertically { it / 2 })
+                                    .togetherWith(fadeOut(animationSpec = tween(300)))
+                            }, label = "transcript"
+                        ) { text ->
+                            Text(
+                                text = text,
+                                modifier = Modifier.verticalScroll(scrollState),
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
+                                color = contentColor.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
 
-                Text("AI 正在深度倾听中...", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(40.dp))
 
                 // 长按结束录音按钮
                 LongPressStopButton(
                     onLongPressComplete = { viewModel.stopRecording() }
                 )
-            } else {
-                Button(
-                    onClick = { viewModel.startRecording() },
-                    modifier = Modifier.height(56.dp)
-                ) {
-                    Text("开始录音")
-                }
             }
         }
     }
@@ -137,51 +230,59 @@ fun LongPressStopButton(
         label = "progress"
     )
 
+    // 呼吸动画
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+
     // 逻辑计时器：当按下时启动协程
     LaunchedEffect(isPressed) {
         if (isPressed) {
             progress = 1f
-            val startTime = System.currentTimeMillis()
-            // 循环检查直到达到目标时长或用户松开
-            while (System.currentTimeMillis() - startTime < targetDurationMs) {
-                delay(10)
-            }
-            // 时间到了且依然处于按下状态
+            delay(targetDurationMs)
             onLongPressComplete()
         } else {
             progress = 0f
         }
     }
 
-    Box(contentAlignment = Alignment.Center) {
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.scale(if (isPressed) 1f else pulseScale)) {
         // 背景进度环
         CircularProgressIndicator(
             progress = { animatedProgress },
             modifier = Modifier.size(110.dp),
-            color = MaterialTheme.colorScheme.error,
-            strokeWidth = 6.dp,
-            trackColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+            color = Color(0xFFEF5350),
+            strokeWidth = 4.dp,
+            trackColor = Color.White.copy(alpha = 0.1f),
         )
 
         // 圆形停止按钮
         Surface(
-            onClick = { /* 拦截点击，防止误触，交互全靠长按 */ },
+            onClick = { /* 拦截点击 */ },
             interactionSource = interactionSource,
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(90.dp),
+            color = Color(0xFFEF5350),
+            modifier = Modifier.size(84.dp),
             shadowElevation = 8.dp
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    "长按结束",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
+            Box(contentAlignment = Alignment.Center) {
+                if (isPressed) {
+                    Icon(Icons.Default.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                } else {
+                    Text(
+                        "长按结束",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

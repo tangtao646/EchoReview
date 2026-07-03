@@ -22,7 +22,8 @@ object DatabaseModule {
             context,
             EchoReviewDatabase::class.java,
             EchoReviewDatabase.DATABASE_NAME
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

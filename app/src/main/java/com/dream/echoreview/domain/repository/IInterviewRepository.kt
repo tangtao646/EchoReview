@@ -8,5 +8,5 @@ interface IInterviewRepository {
     suspend fun getSessionById(id: String): InterviewSession?
     suspend fun insertSession(session: InterviewSession)
     suspend fun deleteSession(id: String)
-    suspend fun updateResults(id: String, transcript: String, aiSummary: String)
+    suspend fun updateResults(id: String, transcript: String, aiSummary: String, durationMillis: Long = 0)
 }

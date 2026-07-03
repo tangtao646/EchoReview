@@ -33,7 +33,7 @@ class InterviewRepositoryImpl @Inject constructor(
         dao.deleteSession(id)
     }
 
-    override suspend fun updateResults(id: String, transcript: String, aiSummary: String) {
-        dao.updateResults(id, transcript, aiSummary)
+    override suspend fun updateResults(id: String, transcript: String, aiSummary: String, durationMillis: Long) {
+        dao.updateResults(id, transcript, aiSummary, durationMillis)
     }
 }

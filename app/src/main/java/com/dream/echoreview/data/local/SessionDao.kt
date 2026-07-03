@@ -20,6 +20,6 @@ interface SessionDao {
     @Query("DELETE FROM interview_sessions WHERE id = :id")
     suspend fun deleteSession(id: String)
     
-    @Query("UPDATE interview_sessions SET transcript = :transcript, aiSummary = :aiSummary WHERE id = :id")
-    suspend fun updateResults(id: String, transcript: String, aiSummary: String)
+    @Query("UPDATE interview_sessions SET transcript = :transcript, aiSummary = :aiSummary, durationMillis = :durationMillis WHERE id = :id")
+    suspend fun updateResults(id: String, transcript: String, aiSummary: String, durationMillis: Long)
 }

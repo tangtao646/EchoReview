@@ -47,6 +47,9 @@ class RecordingViewModel @Inject constructor(
     private val _companyName = MutableStateFlow("")
     val companyName = _companyName.asStateFlow()
 
+    private val _interviewStage = MutableStateFlow("初试")
+    val interviewStage = _interviewStage.asStateFlow()
+
     private val _realtimeTranscript = MutableStateFlow("")
     val realtimeTranscript = _realtimeTranscript.asStateFlow()
 
@@ -60,6 +63,10 @@ class RecordingViewModel @Inject constructor(
 
     fun updateCompanyName(name: String) {
         _companyName.value = name
+    }
+
+    fun updateInterviewStage(stage: String) {
+        _interviewStage.value = stage
     }
 
     fun startRecording() {
@@ -78,7 +85,7 @@ class RecordingViewModel @Inject constructor(
         sttJob = viewModelScope.launch {
             sttEngine.transcribeStream(audioRecorder.audioFlow)
                 .flowOn(Dispatchers.IO)
-                .onStart { _realtimeTranscript.value = "正在连接 AI 转写..." }
+                .onStart { _realtimeTranscript.value = "空空如也..." }
                 .catch { e ->
                     Log.e("RecordingVM", "STT Error: ${e.message}")
                     _realtimeTranscript.value = "转写连接失败: ${e.message}"
@@ -108,12 +115,13 @@ class RecordingViewModel @Inject constructor(
         }
         app.startForegroundService(intent)
 
-        // 3. 预存 Session
+        // 3. 预存 Session，包含 Stage
         viewModelScope.launch {
             repository.insertSession(
                 InterviewSession(
                     id = currentId,
                     companyName = _companyName.value,
+                    interviewStage = _interviewStage.value,
                     audioPath = file.absolutePath,
                     transcript = null,
                     aiSummary = null,
@@ -126,15 +134,35 @@ class RecordingViewModel @Inject constructor(
 
     fun stopRecording() {
         sttJob?.cancel()
+        val finalDuration = audioRecorder.durationMillis.value // 获取最终时长
         val intent = Intent(app, RecordingService::class.java).apply {
             action = RecordingService.ACTION_STOP
         }
         app.startService(intent)
 
-        // 保存最终文字
+        // 保存最终文字和时长
         val finalTranscript = _realtimeTranscript.value
         viewModelScope.launch {
-            repository.updateResults(currentId, finalTranscript, "")
+            repository.updateResults(currentId, finalTranscript, "", finalDuration)
+        }
+    }
+
+    fun discardRecording() {
+        sttJob?.cancel()
+        val intent = Intent(app, RecordingService::class.java).apply {
+            action = RecordingService.ACTION_STOP
+        }
+        app.startService(intent)
+
+        viewModelScope.launch {
+            // 删除数据库记录
+            repository.deleteSession(currentId)
+            // 删除本地文件
+            currentFile?.let {
+                if (it.exists()) {
+                    it.delete()
+                }
+            }
         }
     }
 }

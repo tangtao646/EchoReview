@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.dream.echoreview.ui.screen.DetailScreen
+import com.dream.echoreview.ui.screen.HistoryScreen
 import com.dream.echoreview.ui.screen.HomeScreen
 import com.dream.echoreview.ui.screen.RecordingScreen
 import com.dream.echoreview.ui.screen.SettingsScreen
@@ -53,7 +54,14 @@ class MainActivity : ComponentActivity() {
                         HomeScreen(
                             onNavigateToRecording = { navController.navigate("recording") },
                             onNavigateToDetail = { id -> navController.navigate("detail/$id") },
-                            onNavigateToSettings = { navController.navigate("settings") }
+                            onNavigateToSettings = { navController.navigate("settings") },
+                            onNavigateToHistory = { navController.navigate("history") }
+                        )
+                    }
+                    composable("history") {
+                        HistoryScreen(
+                            onBack = { navController.popBackStack() },
+                            onNavigateToDetail = { id -> navController.navigate("detail/$id") }
                         )
                     }
                     composable("recording") {
